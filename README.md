@@ -28,7 +28,7 @@ Advanced Concepts
 - Window Functions (Top Products)
 - Role-Based Access Control (RBAC)
 
-Tech Stack
+Tech Stack-
 Frontend:React + TypeScript + Redux + Tailwind  
 Backend:FastAPI (Python)  
 Database:MySQL / PostgreSQL  
