@@ -3,13 +3,12 @@ from typing import Optional, List
 from pydantic import BaseModel, EmailStr
 
 
-# ─── Auth / User ─────────────────────────────────────────────────────────────
 
 class UserRegister(BaseModel):
     name: str
     email: EmailStr
     password: str
-    role: Optional[str] = "user"  # user | seller | admin
+    role: Optional[str] = "user"  
 
 
 class UserLogin(BaseModel):
@@ -34,7 +33,7 @@ class UserOut(BaseModel):
         from_attributes = True
 
 
-# ─── Category ────────────────────────────────────────────────────────────────
+
 
 class CategoryCreate(BaseModel):
     name: str
@@ -50,7 +49,7 @@ class CategoryOut(BaseModel):
         from_attributes = True
 
 
-# ─── Product ─────────────────────────────────────────────────────────────────
+
 
 class ProductCreate(BaseModel):
     name: str
@@ -82,7 +81,7 @@ class ProductOut(BaseModel):
         from_attributes = True
 
 
-# ─── Cart ────────────────────────────────────────────────────────────────────
+
 
 class CartItemAdd(BaseModel):
     product_id: int
@@ -107,7 +106,7 @@ class CartOut(BaseModel):
     items: List[CartItemOut]
     total: float
 
-# ─── Orders ─────────────────────────────────────────────────────────────
+
 
 class OrderItemOut(BaseModel):
     product_id: int
@@ -129,7 +128,7 @@ class OrderOut(BaseModel):
         from_attributes = True
 
 
-# ─── Invoice ────────────────────────────────────────────────────────────
+
 
 class InvoiceOut(BaseModel):
     id: int
@@ -141,12 +140,35 @@ class InvoiceOut(BaseModel):
         from_attributes = True
 
 
-# ─── Alerts ─────────────────────────────────────────────────────────────
+
 
 class AlertOut(BaseModel):
     id: int
     product_id: int
     message: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime
+
+
+class ReviewCreate(BaseModel):
+    user_id: int
+    product_id: int
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str] = Field(None, max_length=300)
+
+
+class ReviewResponse(BaseModel):
+    id: int
+    user_id: int
+    product_id: int
+    rating: int
+    comment: Optional[str]
     created_at: datetime
 
     class Config:

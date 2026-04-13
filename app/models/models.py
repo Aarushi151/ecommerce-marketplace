@@ -1,9 +1,10 @@
 from sqlalchemy import (
     Column, Integer, String, Float, Text,
-    ForeignKey, Enum, DateTime, func,
+    ForeignKey, Enum, DateTime, func, CheckConstraint
 )
 from sqlalchemy.orm import relationship
 import enum
+from datetime import datetime
 
 from app.core.database import Base
 
@@ -26,6 +27,7 @@ class User(Base):
 
     products = relationship("Product", back_populates="seller", cascade="all, delete-orphan")
     cart_items = relationship("CartItem", back_populates="user", cascade="all, delete-orphan")
+    reviews = relationship("Review", back_populates="user", cascade="all, delete-orphan")
 
 
 class Category(Base):
@@ -55,6 +57,7 @@ class Product(Base):
     seller = relationship("User", back_populates="products")
     category = relationship("Category", back_populates="products")
     cart_items = relationship("CartItem", back_populates="product")
+    reviews = relationship("Review", back_populates="product")
 
 
 class CartItem(Base):
@@ -67,6 +70,7 @@ class CartItem(Base):
 
     user = relationship("User", back_populates="cart_items")
     product = relationship("Product", back_populates="cart_items")
+
 
 class Order(Base):
     __tablename__ = "orders"
@@ -101,11 +105,46 @@ class Invoice(Base):
     total_amount = Column(Float)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    order = relationship("Order")
+
 
 class Alert(Base):
     __tablename__ = "alerts"
 
     id = Column(Integer, primary_key=True)
-    product_id = Column(Integer)
+    product_id = Column(Integer, ForeignKey("products.id"))
     message = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    product = relationship("Product")
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    product_id = Column(Integer, ForeignKey("products.id"))
+
+    rating = Column(Integer, nullable=False)
+    comment = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        CheckConstraint("rating >= 1 AND rating <= 5"),
+    )
+
+    user = relationship("User", back_populates="reviews")
+    product = relationship("Product", back_populates="reviews")
+
+
+class InventoryLog(Base):
+    __tablename__ = "inventory_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    change = Column(Integer)
+    reason = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    product = relationship("Product")
