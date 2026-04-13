@@ -3,22 +3,19 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models import models
 from app.schemas import schemas
+from .auth import get_current_user   # ✅ IMPORTANT
 
 router = APIRouter()
 
 
 @router.post("/reviews", response_model=schemas.ReviewResponse)
-def add_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
+def add_review(
+    review: schemas.ReviewCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)  # ✅ GET USER FROM TOKEN
+):
 
-    #Check user exists
-    user = db.query(models.User).filter(
-        models.User.id == review.user_id
-    ).first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    #Check product exists
+    # Check product exists
     product = db.query(models.Product).filter(
         models.Product.id == review.product_id
     ).first()
@@ -28,18 +25,25 @@ def add_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
 
     # Prevent duplicate review
     existing = db.query(models.Review).filter(
-        models.Review.user_id == review.user_id,
+        models.Review.user_id == current_user.id,
         models.Review.product_id == review.product_id
     ).first()
 
     if existing:
         raise HTTPException(status_code=400, detail="Already reviewed")
 
-    # Rating validation
+    # Rating validation (extra safety)
     if review.rating < 1 or review.rating > 5:
         raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
 
-    new_review = models.Review(**review.dict())
+    # ✅ CREATE REVIEW USING TOKEN USER
+    new_review = models.Review(
+        user_id=current_user.id,
+        product_id=review.product_id,
+        rating=review.rating,
+        comment=review.comment
+    )
+
     db.add(new_review)
     db.commit()
     db.refresh(new_review)
@@ -50,7 +54,6 @@ def add_review(review: schemas.ReviewCreate, db: Session = Depends(get_db)):
 @router.get("/{product_id}", response_model=list[schemas.ReviewResponse])
 def get_reviews(product_id: int, db: Session = Depends(get_db)):
 
-    #check product exists first
     product = db.query(models.Product).filter(
         models.Product.id == product_id
     ).first()
@@ -61,8 +64,5 @@ def get_reviews(product_id: int, db: Session = Depends(get_db)):
     reviews = db.query(models.Review).filter(
         models.Review.product_id == product_id
     ).all()
-
-    if not reviews:
-        raise HTTPException(status_code=404, detail="No reviews found")
 
     return reviews

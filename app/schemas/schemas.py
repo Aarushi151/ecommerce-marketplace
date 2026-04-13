@@ -157,7 +157,6 @@ from datetime import datetime
 
 
 class ReviewCreate(BaseModel):
-    user_id: int
     product_id: int
     rating: int = Field(..., ge=1, le=5)
     comment: Optional[str] = Field(None, max_length=300)
